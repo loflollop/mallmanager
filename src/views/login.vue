@@ -27,21 +27,39 @@ export default {
   //   created(){
   //       this.?
   //   },
+
   methods: {
-    handleLoginin () {
-      this.$http.post('login', this.formdata)
-        .then((res) => {
-        //  console.log(res)
-          const { meta } = res.data
-          if (meta.status === 200) {
-            this.$message.success(meta.msg)
-          } else {
-            // 提示框
-            this.$message.warning(meta.msg)
-          }
-        })
+    async handleLoginin () {
+      const res = await this.$http.post('login', this.formdata)
+      //  console.log(res)
+      const { meta } = res.data
+      if (meta.status === 200) {
+        const token = res.data.data.token
+        sessionStorage.setItem('token', token)
+        this.$router.push('/')
+        this.$message.success(meta.msg)
+      } else {
+        // 提示框
+        this.$message.warning(meta.msg)
+      }
     }
   }
+
+  // methods: {
+  //   handleLoginin () {
+  //     this.$http.post('login', this.formdata)
+  //       .then((res) => {
+  //       //  console.log(res)
+  //         const { meta } = res.data
+  //         if (meta.status === 200) {
+  //           this.$message.success(meta.msg)
+  //         } else {
+  //           // 提示框
+  //           this.$message.warning(meta.msg)
+  //         }
+  //       })
+  //   }
+  // }
 }
 </script>
 
