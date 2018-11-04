@@ -16,7 +16,7 @@
         </el-col>
     </el-row>
     <!-- 添加用户对话框 -->
-    <el-dialog title="添加用户" :visible.sync="dialogFormVisibleadduser">
+    <el-dialog title="添加用户" :visible.sync="dialogFormVisibleAdduser">
         <el-form :model="formData">
             <el-form-item label="用户名" :label-width="formLabelWidth">
                 <el-input v-model="formData.username" autocomplete="off"></el-input>
@@ -55,7 +55,40 @@
             <el-button type="primary" @click="editUser()">确 定</el-button>
         </div>
     </el-dialog>
+    <!-- 分配权限的对话框 -->
+    <el-dialog title="分配权限" :visible.sync="dialogFormVisibleSetrole">
+        <el-form :model="formData">
+            <el-form-item label="用户名" :label-width="formLabelWidth">
+                {{currUserName}}
+            </el-form-item>
 
+            <el-form-item label="角色" :label-width="formLabelWidth">
+              <!-- el-select的v-model绑定的值如果和el-option的value值 一样
+                就显示当前el-option的label
+                注意: currRoleId是数值
+               -->
+               <!-- // currRoleId = 30 -->
+                <el-select v-model="currRoleId">
+                  <!-- 请选择 -->
+                  <el-option disabled label="请选择" :value="-1">
+
+                  </el-option>
+                  <!-- 遍历数组 -->
+                    <el-option v-for="(item,index) in roles"
+                    :label="item.roleName"
+                    :key="index"
+                    :value="item.id">
+                    </el-option>
+                </el-select>
+
+            </el-form-item>
+
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="dialogFormVisibleSetrole = false">取 消</el-button>
+            <el-button type="primary" @click="setRole()">确 定</el-button>
+        </div>
+    </el-dialog>
     <!-- 表格 -->
     <el-table v-loading="loading" :data="list" style="width: 100%">
         <el-table-column type="index" label="#" width="80">
@@ -93,7 +126,7 @@
             <template slot-scope="scope">
                 <el-row>
                     <el-button type="primary" icon="el-icon-edit" size="mini" plain circle @click="showEditBox(scope.row.id)"></el-button>
-                    <el-button type="success" icon="el-icon-check" size="mini" plain circle></el-button>
+                    <el-button type="success" icon="el-icon-check" size="mini" plain circle @click="showRoleBox(scope.row.id)"></el-button>
                     <el-button type="danger" icon="el-icon-delete" size="mini" plain circle @click="showDeleBox(scope.row.id)"></el-button>
                 </el-row>
             </template>
@@ -130,21 +163,76 @@ export default {
         mobile: ''
       },
       // 对话框中input 宽度
-      formLabelwidth: '100px',
+      formLabelWidth: '100px',
       // 编辑用户对话框属性显示
-      dialogFormVisibleEdituser: false
+      dialogFormVisibleEdituser: false,
+      // 分配权限对话框属性
+      dialogFormVisibleSetrole: false,
+      // 当前用户名
+      currUserName: '',
+      // 当前的角色名
+      currRoleId: -1,
+      // 所有的角色
+      roles: [],
+      // 用户id
+      currUserId: -1
     }
   },
   created () {
     this.loadTableData()
   },
   methods: {
+    // 分配权限 -发送请求
+    // 主管 -> 测试角色
+    async setRole () {
+      // 发送请求
+      const res = await this.$http.put(`users/${this.currUserId}/role`, {
+        rid: this.currRoleId
+      })
+      // console.log(res)
+      const {
+        meta: { status, msg }
+      } = res.data
+      // 提示框
+      this.$message.success(msg)
+      // 关闭对话框
+      this.dialogFormVisibleSetrole = false
+      // users/:id/role   (rid:角色id)
+      // 重置
+      this.currRoleId = -1
+    },
+    // 分配权限 - 显示对话框
+    async showRoleBox (user) {
+      console.log('-----')
+
+      console.log(user)
+
+      // 分配角色时 url中要用的userId
+      this.currUserId = user.id
+      // 显示用户名
+      this.currUserName = user.username
+
+      this.dialogFormVisibleSetrole = true
+
+      const res = await this.$http.get('roles')
+      console.log(res) // res.data.data array
+
+      const res2 = await this.$http.get(`users/${user.id}`)
+      // console.log(res2);
+      // console.log(res2.data.data.rid)
+      // 接口文档有问题!!
+      // currRoleId 某一个角色(主管等)对应的id
+      this.currRoleId = res2.data.data.rid
+
+      this.roles = res.data.data
+      // console.log(this.roles)
+    },
     // 编辑用户-发送请求
     async editUser () {
-      //关闭对话框
+      // 关闭对话框
       this.dialogFormVisibleEdituser = false
       // 发送请求put
-      const res = await this.$http.put(`users/${this.formData.id}`,this.formData)
+      const res = await this.$http.put(`users/${this.formData.id}`, this.formData)
       console.log(res)
       this.loadTableData()
       this.$message.success(res.data.meta.msg)
